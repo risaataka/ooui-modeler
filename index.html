@@ -9,9 +9,679 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@400;600;700;800&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #0e0f14;
+    --surface: #16181f;
+    --surface2: #1e2029;
+    --surface3: #262934;
+    --border: #2a2d3a;
+    --border2: #363a4a;
+    --accent: #6ee7b7;
+    --accent2: #818cf8;
+    --accent3: #f472b6;
+    --accent4: #fbbf24;
+    --text: #e8eaf0;
+    --text2: #9ea3b8;
+    --text3: #5c617a;
+    --danger: #f87171;
+    --radius: 12px;
+    --radius-sm: 8px;
+  }
+  html, body { height: 100%; background: var(--bg); color: var(--text); font-family: 'Inter', sans-serif; font-size: 14px; overflow: hidden; }
+  #root { height: 100%; }
+  ::-webkit-scrollbar { width: 5px; height: 5px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
+  button { cursor: pointer; font-family: 'Inter', sans-serif; }
+  textarea, input { font-family: 'Inter', sans-serif; }
+  .font-mono { font-family: 'DM Mono', monospace; }
+  .font-display { font-family: 'Syne', sans-serif; }
+
+  /* Layout */
+  .app { display: grid; grid-template-columns: 300px 1fr; grid-template-rows: 56px 1fr; height: 100vh; overflow: hidden; }
+  .header { grid-column: 1 / -1; display: flex; align-items: center; padding: 0 20px; gap: 16px; border-bottom: 1px solid var(--border); background: var(--surface); z-index: 10; }
+  .sidebar { grid-row: 2; border-right: 1px solid var(--border); background: var(--surface); overflow-y: auto; display: flex; flex-direction: column; }
+  .main { grid-row: 2; overflow-y: auto; padding: 24px; background: var(--bg); }
+
+  /* Header */
+  .logo { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 18px; color: var(--accent); letter-spacing: -0.5px; }
+  .logo span { color: var(--text3); font-weight: 400; }
+  .header-steps { display: flex; gap: 4px; margin-left: auto; align-items: center; }
+  .step-pill { padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: 600; letter-spacing: 0.5px; cursor: pointer; border: 1px solid transparent; transition: all 0.2s; color: var(--text3); }
+  .step-pill.active { background: var(--accent); color: #0e0f14; border-color: var(--accent); }
+  .step-pill:not(.active):hover { border-color: var(--border2); color: var(--text2); }
+  .export-btn { padding: 6px 14px; border-radius: var(--radius-sm); border: 1px solid var(--border2); background: transparent; color: var(--text2); font-size: 12px; font-weight: 500; transition: all 0.2s; display: flex; align-items: center; gap: 6px; }
+  .export-btn:hover { background: var(--surface3); color: var(--text); }
+
+  /* Sidebar */
+  .sidebar-section { padding: 16px; border-bottom: 1px solid var(--border); }
+  .sidebar-label { font-size: 10px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: var(--text3); margin-bottom: 10px; display: flex; align-items: center; gap: 8px; }
+  .sidebar-label .dot { width: 6px; height: 6px; border-radius: 50%; }
+  .task-input { width: 100%; background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius-sm); color: var(--text); padding: 10px 12px; font-size: 13px; resize: none; line-height: 1.6; outline: none; min-height: 140px; transition: border-color 0.2s; }
+  .task-input:focus { border-color: var(--accent); }
+  .task-input::placeholder { color: var(--text3); }
+  .analyze-btn { width: 100%; margin-top: 10px; padding: 10px; border-radius: var(--radius-sm); background: var(--accent); color: #0e0f14; font-weight: 700; font-size: 13px; border: none; transition: all 0.2s; display: flex; align-items: center; justify-content: center; gap: 8px; }
+  .analyze-btn:hover { background: #34d399; transform: translateY(-1px); }
+  .analyze-btn:disabled { opacity: 0.5; transform: none; cursor: not-allowed; }
+  .hint-box { background: var(--surface2); border: 1px solid var(--border); border-left: 3px solid var(--accent2); border-radius: var(--radius-sm); padding: 10px 12px; font-size: 12px; color: var(--text2); line-height: 1.6; }
+  .hint-box .hint-title { color: var(--accent2); font-weight: 600; margin-bottom: 4px; font-size: 11px; letter-spacing: 0.5px; }
+  .object-list { display: flex; flex-direction: column; gap: 6px; }
+  .object-chip { padding: 8px 12px; border-radius: var(--radius-sm); background: var(--surface2); border: 1px solid var(--border); font-size: 13px; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; gap: 8px; }
+  .object-chip:hover { border-color: var(--border2); background: var(--surface3); }
+  .object-chip.selected { border-color: var(--accent); background: rgba(110,231,183,0.08); }
+  .object-chip .chip-icon { width: 20px; height: 20px; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 11px; flex-shrink: 0; }
+  .add-object-row { display: flex; gap: 8px; margin-top: 8px; }
+  .add-input { flex: 1; background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius-sm); color: var(--text); padding: 8px 10px; font-size: 13px; outline: none; }
+  .add-input:focus { border-color: var(--accent); }
+  .add-btn { padding: 8px 12px; border-radius: var(--radius-sm); background: var(--surface3); border: 1px solid var(--border2); color: var(--accent); font-size: 13px; font-weight: 600; transition: all 0.2s; }
+  .add-btn:hover { background: rgba(110,231,183,0.1); }
+
+  /* Main area */
+  .page-title { font-family: 'Syne', sans-serif; font-size: 22px; font-weight: 700; color: var(--text); margin-bottom: 4px; }
+  .page-sub { font-size: 13px; color: var(--text3); margin-bottom: 24px; }
+  .objects-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 16px; }
+  .object-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 0; overflow: hidden; transition: border-color 0.2s, box-shadow 0.2s; }
+  .object-card:hover { border-color: var(--border2); box-shadow: 0 4px 20px rgba(0,0,0,0.3); }
+  .object-card.highlighted { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent), 0 4px 20px rgba(110,231,183,0.1); }
+  .card-header { padding: 14px 16px; display: flex; align-items: center; gap: 10px; border-bottom: 1px solid var(--border); }
+  .card-icon { width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 15px; flex-shrink: 0; }
+  .card-name { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 16px; flex: 1; background: transparent; border: none; color: var(--text); outline: none; }
+  .card-name:focus { color: var(--accent); }
+  .card-del { width: 28px; height: 28px; border-radius: 6px; background: transparent; border: none; color: var(--text3); font-size: 16px; display: flex; align-items: center; justify-content: center; transition: all 0.2s; }
+  .card-del:hover { background: rgba(248,113,113,0.15); color: var(--danger); }
+  .card-section { padding: 12px 16px; border-bottom: 1px solid var(--border); }
+  .card-section:last-child { border-bottom: none; }
+  .section-header { font-size: 10px; font-weight: 700; letter-spacing: 1.2px; text-transform: uppercase; color: var(--text3); margin-bottom: 8px; display: flex; align-items: center; justify-content: space-between; }
+  .section-add { font-size: 18px; color: var(--text3); background: none; border: none; line-height: 1; padding: 0 2px; border-radius: 4px; transition: all 0.2s; }
+  .section-add:hover { color: var(--accent); background: rgba(110,231,183,0.1); }
+  .tag-list { display: flex; flex-wrap: wrap; gap: 6px; }
+  .tag { display: flex; align-items: center; gap: 5px; padding: 4px 8px 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 500; border: 1px solid; }
+  .tag-prop { background: rgba(129,140,248,0.1); border-color: rgba(129,140,248,0.3); color: var(--accent2); }
+  .tag-action { background: rgba(244,114,182,0.1); border-color: rgba(244,114,182,0.3); color: var(--accent3); }
+  .tag-del { background: none; border: none; color: inherit; opacity: 0.6; font-size: 14px; line-height: 1; padding: 0; cursor: pointer; }
+  .tag-del:hover { opacity: 1; }
+  .tag-input { border: none; background: none; color: var(--text); font-size: 12px; outline: none; width: 100px; }
+  .inline-add { display: flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 20px; background: var(--surface2); border: 1px dashed var(--border2); cursor: text; }
+  .inline-add input { background: none; border: none; color: var(--text2); font-size: 12px; outline: none; width: 120px; }
+  .inline-add span { color: var(--text3); font-size: 12px; }
+  .relation-badge { font-size: 10px; padding: 2px 7px; border-radius: 10px; background: rgba(251,191,36,0.15); border: 1px solid rgba(251,191,36,0.3); color: var(--accent4); font-family: 'DM Mono', monospace; cursor: pointer; }
+  .multiplicity-select { background: var(--surface2); border: 1px solid var(--border); border-radius: 6px; color: var(--text2); font-size: 11px; padding: 3px 6px; outline: none; }
+
+  /* Relations section */
+  .relations-area { margin-top: 24px; }
+  .relations-table { width: 100%; border-collapse: collapse; background: var(--surface); border-radius: var(--radius); overflow: hidden; border: 1px solid var(--border); }
+  .relations-table th { padding: 10px 16px; text-align: left; font-size: 10px; font-weight: 700; letter-spacing: 1.2px; text-transform: uppercase; color: var(--text3); background: var(--surface2); border-bottom: 1px solid var(--border); }
+  .relations-table td { padding: 10px 16px; font-size: 13px; border-bottom: 1px solid var(--border); }
+  .relations-table tr:last-child td { border-bottom: none; }
+  .relations-table tr:hover td { background: var(--surface2); }
+
+  /* Validation */
+  .validation-area { margin-top: 24px; }
+  .val-item { display: flex; align-items: flex-start; gap: 12px; padding: 12px 14px; border-radius: var(--radius-sm); margin-bottom: 8px; }
+  .val-warn { background: rgba(251,191,36,0.08); border: 1px solid rgba(251,191,36,0.25); }
+  .val-ok { background: rgba(110,231,183,0.06); border: 1px solid rgba(110,231,183,0.2); }
+  .val-icon { font-size: 16px; flex-shrink: 0; margin-top: 1px; }
+  .val-text { font-size: 13px; color: var(--text2); line-height: 1.5; }
+  .val-text strong { color: var(--text); }
+
+  /* Export */
+  .export-modal { position: fixed; inset: 0; background: rgba(0,0,0,0.7); backdrop-filter: blur(4px); display: flex; align-items: center; justify-content: center; z-index: 100; }
+  .export-box { background: var(--surface); border: 1px solid var(--border2); border-radius: var(--radius); padding: 24px; width: 640px; max-height: 80vh; display: flex; flex-direction: column; gap: 16px; }
+  .export-tabs { display: flex; gap: 4px; }
+  .export-tab { padding: 6px 14px; border-radius: 6px; font-size: 12px; font-weight: 600; border: 1px solid transparent; cursor: pointer; transition: all 0.2s; color: var(--text3); background: none; }
+  .export-tab.active { background: var(--surface3); color: var(--text); border-color: var(--border2); }
+  .export-content { background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 16px; font-family: 'DM Mono', monospace; font-size: 12px; color: var(--text2); overflow-y: auto; max-height: 340px; white-space: pre-wrap; line-height: 1.7; }
+  .copy-btn { padding: 10px 20px; border-radius: var(--radius-sm); background: var(--accent); color: #0e0f14; font-weight: 700; font-size: 13px; border: none; cursor: pointer; transition: all 0.2s; }
+  .copy-btn:hover { background: #34d399; }
+  .close-btn { padding: 10px 16px; border-radius: var(--radius-sm); background: transparent; border: 1px solid var(--border2); color: var(--text2); font-size: 13px; cursor: pointer; }
+
+  /* AI response */
+  .ai-result { margin-top: 10px; background: var(--surface2); border: 1px solid var(--border); border-left: 3px solid var(--accent); border-radius: var(--radius-sm); padding: 12px; font-size: 12px; color: var(--text2); line-height: 1.7; max-height: 200px; overflow-y: auto; }
+  .spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid rgba(0,0,0,0.2); border-top-color: #0e0f14; border-radius: 50%; animation: spin 0.7s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* Empty state */
+  .empty-state { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 60px 20px; color: var(--text3); text-align: center; gap: 12px; }
+  .empty-icon { font-size: 48px; opacity: 0.3; }
+  .empty-text { font-size: 14px; line-height: 1.6; }
+
+  /* Tab nav */
+  .main-tabs { display: flex; gap: 2px; margin-bottom: 24px; background: var(--surface); border-radius: var(--radius-sm); padding: 4px; border: 1px solid var(--border); width: fit-content; }
+  .main-tab { padding: 7px 16px; border-radius: 6px; font-size: 13px; font-weight: 500; border: none; cursor: pointer; transition: all 0.2s; color: var(--text3); background: none; }
+  .main-tab.active { background: var(--surface3); color: var(--text); box-shadow: 0 1px 3px rgba(0,0,0,0.3); }
+
+  /* Relation add row */
+  .rel-add-row { display: flex; gap: 8px; align-items: center; margin-top: 10px; flex-wrap: wrap; }
+  .rel-select { background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius-sm); color: var(--text2); font-size: 12px; padding: 6px 10px; outline: none; }
+  .rel-add-btn { padding: 6px 14px; border-radius: var(--radius-sm); background: var(--surface3); border: 1px solid var(--border2); color: var(--accent2); font-size: 12px; font-weight: 600; cursor: pointer; transition: all 0.2s; }
+  .rel-add-btn:hover { background: rgba(129,140,248,0.1); }
+
+  /* color themes for object cards */
+  .color-0 .card-icon { background: rgba(110,231,183,0.15); }
+  .color-1 .card-icon { background: rgba(129,140,248,0.15); }
+  .color-2 .card-icon { background: rgba(244,114,182,0.15); }
+  .color-3 .card-icon { background: rgba(251,191,36,0.15); }
+  .color-4 .card-icon { background: rgba(125,211,252,0.15); }
+  .color-0 .card-header { border-left: 3px solid var(--accent); }
+  .color-1 .card-header { border-left: 3px solid var(--accent2); }
+  .color-2 .card-header { border-left: 3px solid var(--accent3); }
+  .color-3 .card-header { border-left: 3px solid var(--accent4); }
+  .color-4 .card-header { border-left: 3px solid #7dd3fc; }
+  .count-badge { font-size: 10px; padding: 2px 7px; border-radius: 10px; background: var(--surface3); color: var(--text3); font-family: 'DM Mono', monospace; }
+</style>
 </head>
 <body>
 <div id="root"></div>
-<p style="color:#6ee7b7;background:#0e0f14;padding:40px;font-family:sans-serif">OOUI Modeler - Full version deploying...</p>
+<script type="text/babel">
+const { useState, useCallback, useRef } = React;
+
+const ICONS = ['📦','📄','👤','🏢','📅','🔖','💳','📊','🛒','📋','⚙️','🗂️'];
+const COLORS = ['color-0','color-1','color-2','color-3','color-4'];
+const MULTIPLICITIES = ['1:1','1:N','N:N'];
+
+function uid() { return Math.random().toString(36).slice(2,9); }
+
+const HINTS = {
+  tasks: { title: '💡 タスク入力のヒント', text: '「〜を確認する」「〜を追加する」「〜を印刷する」のように動詞で終わるタスクを箇条書きで入力してください。AI解析でオブジェクト候補を提案します。' },
+  objects: { title: '💡 オブジェクトとは？', text: '「注文」「顧客」「商品」など、UIで扱う「モノ（名詞）」です。タスクに繰り返し登場する名詞がメインオブジェクトの候補です。' },
+  props: { title: '💡 プロパティとは？', text: 'オブジェクトの属性です。「注文番号」「金額」「日付」などがプロパティです。別のオブジェクトへの参照はサブオブジェクトになります。' },
+  actions: { title: '💡 アクションとは？', text: '「確認する」はアクションではなく表示です。「作成」「削除」「承認」「キャンセル」など、状態を変化させる操作がアクションです。' },
+};
+
+function Tag({ label, type, onDelete }) {
+  return (
+    <span className={`tag tag-${type}`}>
+      {label}
+      <button className="tag-del" onClick={onDelete}>×</button>
+    </span>
+  );
+}
+
+function InlineAdd({ placeholder, onAdd, type }) {
+  const [val, setVal] = useState('');
+  const [active, setActive] = useState(false);
+  const colors = type === 'prop' ? '#818cf8' : '#f472b6';
+  return (
+    <span className="inline-add" style={{ borderColor: active ? colors : undefined }} onClick={() => setActive(true)}>
+      <span style={{ color: colors }}>＋</span>
+      <input
+        placeholder={placeholder}
+        value={val}
+        onChange={e => setVal(e.target.value)}
+        onFocus={() => setActive(true)}
+        onBlur={() => { setActive(false); if (val.trim()) { onAdd(val.trim()); setVal(''); } }}
+        onKeyDown={e => { if (e.key === 'Enter' && val.trim()) { onAdd(val.trim()); setVal(''); e.preventDefault(); } }}
+        style={{ color: colors }}
+      />
+    </span>
+  );
+}
+
+function ObjectCard({ obj, idx, selected, onSelect, onUpdate, onDelete, allObjects }) {
+  const colorClass = COLORS[idx % COLORS.length];
+  const icon = ICONS[idx % ICONS.length];
+
+  const addProp = name => onUpdate({ ...obj, properties: [...obj.properties, { id: uid(), name }] });
+  const delProp = id => onUpdate({ ...obj, properties: obj.properties.filter(p => p.id !== id) });
+  const addAction = name => {
+    const lower = name;
+    const warn = /確認|表示|見る|みる|チェック|参照/.test(lower);
+    onUpdate({ ...obj, actions: [...obj.actions, { id: uid(), name, warn }] });
+  };
+  const delAction = id => onUpdate({ ...obj, actions: obj.actions.filter(a => a.id !== id) });
+
+  return (
+    <div className={`object-card ${colorClass} ${selected ? 'highlighted' : ''}`} onClick={onSelect}>
+      <div className="card-header">
+        <div className="card-icon">{icon}</div>
+        <input
+          className="card-name"
+          value={obj.name}
+          onChange={e => onUpdate({ ...obj, name: e.target.value })}
+          onClick={e => e.stopPropagation()}
+          placeholder="オブジェクト名"
+        />
+        <button className="card-del" onClick={e => { e.stopPropagation(); onDelete(); }}>✕</button>
+      </div>
+      <div className="card-section">
+        <div className="section-header">
+          <span>プロパティ <span className="count-badge">{obj.properties.length}</span></span>
+        </div>
+        <div className="tag-list">
+          {obj.properties.map(p => (
+            <Tag key={p.id} label={p.name} type="prop" onDelete={() => delProp(p.id)} />
+          ))}
+          <InlineAdd placeholder="属性を追加" type="prop" onAdd={addProp} />
+        </div>
+      </div>
+      <div className="card-section">
+        <div className="section-header">
+          <span>アクション <span className="count-badge">{obj.actions.length}</span></span>
+        </div>
+        <div className="tag-list">
+          {obj.actions.map(a => (
+            <span key={a.id}>
+              <Tag label={a.name} type="action" onDelete={() => delAction(a.id)} />
+              {a.warn && <span style={{ fontSize: 10, color: '#fbbf24', marginLeft: 4 }} title="「確認」系はアクションではなく表示かもしれません">⚠</span>}
+            </span>
+          ))}
+          <InlineAdd placeholder="アクションを追加" type="action" onAdd={addAction} />
+        </div>
+      </div>
+      {obj.relations && obj.relations.length > 0 && (
+        <div className="card-section">
+          <div className="section-header">リレーション</div>
+          <div className="tag-list">
+            {obj.relations.map((r, ri) => {
+              const target = allObjects.find(o => o.id === r.targetId);
+              return target ? (
+                <span key={ri} className="relation-badge">{obj.name} {r.multiplicity} {target.name}</span>
+              ) : null;
+            })}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function RelationsPanel({ objects, onUpdate }) {
+  const [fromId, setFromId] = useState('');
+  const [toId, setToId] = useState('');
+  const [mult, setMult] = useState('1:N');
+
+  const allRelations = [];
+  objects.forEach(obj => {
+    (obj.relations || []).forEach(r => {
+      const target = objects.find(o => o.id === r.targetId);
+      if (target) allRelations.push({ from: obj, to: target, mult: r.multiplicity, relId: r.id });
+    });
+  });
+
+  const addRelation = () => {
+    if (!fromId || !toId || fromId === toId) return;
+    const fromObj = objects.find(o => o.id === fromId);
+    if (!fromObj) return;
+    const newRel = { id: uid(), targetId: toId, multiplicity: mult };
+    onUpdate(fromObj.id, { ...fromObj, relations: [...(fromObj.relations || []), newRel] });
+    setFromId(''); setToId('');
+  };
+
+  const delRelation = (fromId, relId) => {
+    const obj = objects.find(o => o.id === fromId);
+    if (!obj) return;
+    onUpdate(obj.id, { ...obj, relations: (obj.relations || []).filter(r => r.id !== relId) });
+  };
+
+  return (
+    <div>
+      <div className="rel-add-row">
+        <select className="rel-select" value={fromId} onChange={e => setFromId(e.target.value)}>
+          <option value="">起点オブジェクト</option>
+          {objects.map(o => <option key={o.id} value={o.id}>{o.name}</option>)}
+        </select>
+        <select className="rel-select" value={mult} onChange={e => setMult(e.target.value)}>
+          {MULTIPLICITIES.map(m => <option key={m} value={m}>{m}</option>)}
+        </select>
+        <select className="rel-select" value={toId} onChange={e => setToId(e.target.value)}>
+          <option value="">終点オブジェクト</option>
+          {objects.map(o => <option key={o.id} value={o.id}>{o.name}</option>)}
+        </select>
+        <button className="rel-add-btn" onClick={addRelation}>追加</button>
+      </div>
+      {allRelations.length > 0 ? (
+        <table className="relations-table" style={{ marginTop: 16 }}>
+          <thead><tr><th>起点</th><th>多重度</th><th>終点</th><th></th></tr></thead>
+          <tbody>
+            {allRelations.map((r, i) => (
+              <tr key={i}>
+                <td style={{ color: 'var(--accent)' }}>{r.from.name}</td>
+                <td><span className="relation-badge">{r.mult}</span></td>
+                <td style={{ color: 'var(--accent2)' }}>{r.to.name}</td>
+                <td><button style={{ background: 'none', border: 'none', color: 'var(--text3)', cursor: 'pointer', fontSize: 14 }} onClick={() => delRelation(r.from.id, r.relId)}>✕</button></td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      ) : (
+        <p style={{ color: 'var(--text3)', fontSize: 13, marginTop: 16 }}>リレーションがまだ定義されていません。上から追加してください。</p>
+      )}
+    </div>
+  );
+}
+
+function ValidationPanel({ objects, tasks }) {
+  const items = [];
+  const taskText = tasks.toLowerCase();
+
+  // Check: actions named "確認" pattern
+  objects.forEach(obj => {
+    obj.actions.filter(a => a.warn).forEach(a => {
+      items.push({ type: 'warn', text: <>「<strong>{obj.name}</strong>」の「<strong>{a.name}</strong>」は「確認・表示」系の動詞です。アクションではなくオブジェクトの一覧・詳細ビューで表現できるか検討してください。</> });
+    });
+  });
+
+  // Check: objects with no actions
+  objects.filter(o => o.actions.length === 0).forEach(o => {
+    items.push({ type: 'warn', text: <>「<strong>{o.name}</strong>」にアクションが定義されていません。新規作成・削除などのアクションを追加してください。</> });
+  });
+
+  // Check: objects with no properties
+  objects.filter(o => o.properties.length === 0).forEach(o => {
+    items.push({ type: 'warn', text: <>「<strong>{o.name}</strong>」にプロパティが定義されていません。属性（名前、日付、金額など）を追加してください。</> });
+  });
+
+  if (objects.length > 0 && items.filter(i => i.type === 'warn').length === 0) {
+    items.push({ type: 'ok', text: <>すべてのオブジェクトにプロパティとアクションが定義されています。設計の基本構造が整っています。</> });
+  }
+
+  return (
+    <div>
+      {items.length === 0 && <p style={{ color: 'var(--text3)', fontSize: 13 }}>オブジェクトを追加すると、設計のバリデーション結果がここに表示されます。</p>}
+      {items.map((item, i) => (
+        <div key={i} className={`val-item val-${item.type}`}>
+          <span className="val-icon">{item.type === 'warn' ? '⚠️' : '✅'}</span>
+          <span className="val-text">{item.text}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function ExportModal({ objects, tasks, onClose }) {
+  const [tab, setTab] = useState('md');
+  const [copied, setCopied] = useState(false);
+
+  const mdContent = `# OOUIモデル設計書
+
+## タスク一覧
+${tasks.split('\n').filter(Boolean).map(t => `- ${t}`).join('\n')}
+
+## オブジェクト定義
+
+${objects.map(o => `### ${o.name}
+
+**プロパティ**
+${o.properties.map(p => `- ${p.name}`).join('\n') || '- （未定義）'}
+
+**アクション**
+${o.actions.map(a => `- ${a.name}`).join('\n') || '- （未定義）'}
+
+**リレーション**
+${(o.relations || []).map(r => {
+  const t = objects.find(x => x.id === r.targetId);
+  return t ? `- ${o.name} ${r.multiplicity} ${t.name}` : '';
+}).filter(Boolean).join('\n') || '- （なし）'}
+`).join('\n---\n\n')}`;
+
+  const jsonContent = JSON.stringify({
+    tasks: tasks.split('\n').filter(Boolean),
+    objects: objects.map(o => ({
+      id: o.id,
+      name: o.name,
+      properties: o.properties.map(p => p.name),
+      actions: o.actions.map(a => a.name),
+      relations: (o.relations || []).map(r => {
+        const t = objects.find(x => x.id === r.targetId);
+        return { target: t?.name, multiplicity: r.multiplicity };
+      }).filter(r => r.target)
+    }))
+  }, null, 2);
+
+  const content = tab === 'md' ? mdContent : jsonContent;
+
+  const copy = () => {
+    navigator.clipboard.writeText(content);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1500);
+  };
+
+  return (
+    <div className="export-modal" onClick={onClose}>
+      <div className="export-box" onClick={e => e.stopPropagation()}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <span style={{ fontFamily: 'Syne', fontWeight: 700, fontSize: 16 }}>設計書をエクスポート</span>
+          <button className="close-btn" onClick={onClose}>閉じる</button>
+        </div>
+        <div className="export-tabs">
+          <button className={`export-tab ${tab === 'md' ? 'active' : ''}`} onClick={() => setTab('md')}>Markdown</button>
+          <button className={`export-tab ${tab === 'json' ? 'active' : ''}`} onClick={() => setTab('json')}>JSON</button>
+        </div>
+        <div className="export-content">{content}</div>
+        <div style={{ display: 'flex', gap: 10 }}>
+          <button className="copy-btn" onClick={copy}>{copied ? '✓ コピー済み' : 'クリップボードにコピー'}</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function App() {
+  const [tasks, setTasks] = useState('');
+  const [objects, setObjects] = useState([]);
+  const [selectedId, setSelectedId] = useState(null);
+  const [newObjName, setNewObjName] = useState('');
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiResult, setAiResult] = useState('');
+  const [mainTab, setMainTab] = useState('objects');
+  const [showExport, setShowExport] = useState(false);
+  const [currentHint, setCurrentHint] = useState('tasks');
+
+  const addObject = name => {
+    if (!name.trim()) return;
+    setObjects(prev => [...prev, { id: uid(), name: name.trim(), properties: [], actions: [], relations: [] }]);
+    setNewObjName('');
+    setCurrentHint('props');
+  };
+
+  const updateObject = (id, updated) => {
+    setObjects(prev => prev.map(o => o.id === id ? updated : o));
+  };
+
+  const deleteObject = id => {
+    setObjects(prev => prev.filter(o => o.id !== id).map(o => ({
+      ...o, relations: (o.relations || []).filter(r => r.targetId !== id)
+    })));
+    if (selectedId === id) setSelectedId(null);
+  };
+
+  const analyzeWithAI = async () => {
+    if (!tasks.trim()) return;
+    setAiLoading(true);
+    setAiResult('');
+    try {
+      const response = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-20250514',
+          max_tokens: 1000,
+          system: `あなたはOOUI（オブジェクト指向UI）設計の専門家です。
+ユーザーが入力したタスクリストを分析し、以下の形式でJSONのみを返してください（説明文なし、マークダウンなし）:
+{
+  "objects": [
+    {
+      "name": "オブジェクト名（日本語）",
+      "properties": ["プロパティ1", "プロパティ2"],
+      "actions": ["アクション1", "アクション2"],
+      "reason": "なぜこれがメインオブジェクトか1行"
+    }
+  ],
+  "notes": "設計上の注意点（1〜2文）"
+}
+ルール:
+- 「確認する」「表示する」「見る」はアクションに含めない
+- アクションは状態を変化させるもののみ（作成、削除、承認、更新など）
+- メインオブジェクトは3〜6個程度
+- プロパティは各オブジェクトに2〜5個
+- 回答はJSONのみ、それ以外の文字を含めない`,
+          messages: [{ role: 'user', content: `以下のタスクリストを分析してください:\n${tasks}` }]
+        })
+      });
+      const data = await response.json();
+      const text = data.content?.find(c => c.type === 'text')?.text || '';
+      try {
+        const parsed = JSON.parse(text.replace(/```json|```/g, '').trim());
+        // Auto-populate objects
+        parsed.objects.forEach(obj => {
+          const id = uid();
+          setObjects(prev => [...prev, {
+            id,
+            name: obj.name,
+            properties: obj.properties.map(p => ({ id: uid(), name: p })),
+            actions: obj.actions.map(a => {
+              const warn = /確認|表示|見る|みる|チェック|参照/.test(a);
+              return { id: uid(), name: a, warn };
+            }),
+            relations: [],
+            reason: obj.reason
+          }]);
+        });
+        setAiResult(`✅ ${parsed.objects.length}個のオブジェクトを抽出しました。\n${parsed.notes || ''}\n\n各オブジェクトをカードで確認・編集してください。`);
+        setMainTab('objects');
+        setCurrentHint('actions');
+      } catch {
+        setAiResult(text);
+      }
+    } catch (e) {
+      setAiResult('APIエラーが発生しました。ネットワーク接続を確認してください。');
+    }
+    setAiLoading(false);
+  };
+
+  const hint = HINTS[currentHint];
+
+  return (
+    <div className="app">
+      {/* Header */}
+      <header className="header">
+        <div className="logo">OOUI<span>modeler</span></div>
+        <div className="header-steps">
+          {['タスク入力','オブジェクト抽出','プロパティ','アクション','リレーション'].map((s, i) => (
+            <div key={i} className={`step-pill ${i === ['tasks','objects','props','actions','relations'].indexOf(currentHint) ? 'active' : ''}`}
+              onClick={() => setCurrentHint(['tasks','objects','props','actions','relations'][i])}>
+              {i + 1}. {s}
+            </div>
+          ))}
+        </div>
+        <button className="export-btn" style={{ marginLeft: 16 }} onClick={() => setShowExport(true)}>
+          📄 エクスポート
+        </button>
+      </header>
+
+      {/* Sidebar */}
+      <aside className="sidebar">
+        <div className="sidebar-section">
+          <div className="sidebar-label"><span className="dot" style={{ background: 'var(--accent)' }}></span>タスク入力</div>
+          <textarea
+            className="task-input"
+            placeholder={"例:\n注文を確認する\n注文をキャンセルする\n商品を検索する\n在庫を更新する"}
+            value={tasks}
+            onChange={e => { setTasks(e.target.value); setCurrentHint('tasks'); }}
+          />
+          <button className="analyze-btn" onClick={analyzeWithAI} disabled={aiLoading || !tasks.trim()}>
+            {aiLoading ? <><span className="spinner"></span> 解析中...</> : '✦ AIで解析する'}
+          </button>
+          {aiResult && <div className="ai-result">{aiResult}</div>}
+        </div>
+
+        <div className="sidebar-section">
+          <div className="sidebar-label"><span className="dot" style={{ background: 'var(--accent2)' }}></span>オブジェクト一覧</div>
+          <div className="object-list">
+            {objects.map((o, i) => (
+              <div key={o.id}
+                className={`object-chip ${selectedId === o.id ? 'selected' : ''}`}
+                onClick={() => { setSelectedId(o.id === selectedId ? null : o.id); setCurrentHint('props'); }}>
+                <div className="chip-icon" style={{ background: `rgba(${['110,231,183','129,140,248','244,114,182','251,191,36','125,211,252'][i%5]},0.15)` }}>
+                  {ICONS[i % ICONS.length]}
+                </div>
+                <span style={{ flex: 1, fontSize: 13 }}>{o.name || '（名称未設定）'}</span>
+                <span className="count-badge">{o.properties.length}P / {o.actions.length}A</span>
+              </div>
+            ))}
+          </div>
+          <div className="add-object-row">
+            <input
+              className="add-input"
+              placeholder="オブジェクトを追加..."
+              value={newObjName}
+              onChange={e => setNewObjName(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && addObject(newObjName)}
+            />
+            <button className="add-btn" onClick={() => addObject(newObjName)}>追加</button>
+          </div>
+        </div>
+
+        <div className="sidebar-section" style={{ flex: 1 }}>
+          <div className="hint-box">
+            <div className="hint-title">{hint.title}</div>
+            {hint.text}
+          </div>
+        </div>
+      </aside>
+
+      {/* Main */}
+      <main className="main">
+        <div className="main-tabs">
+          <button className={`main-tab ${mainTab === 'objects' ? 'active' : ''}`} onClick={() => setMainTab('objects')}>📦 オブジェクト</button>
+          <button className={`main-tab ${mainTab === 'relations' ? 'active' : ''}`} onClick={() => setMainTab('relations')}>🔗 リレーション</button>
+          <button className={`main-tab ${mainTab === 'validation' ? 'active' : ''}`} onClick={() => setMainTab('validation')}>✅ バリデーション</button>
+        </div>
+
+        {mainTab === 'objects' && (
+          <>
+            <div className="page-title">オブジェクト定義</div>
+            <div className="page-sub">各オブジェクトのプロパティとアクションを定義します。インラインで直接編集できます。</div>
+            {objects.length === 0 ? (
+              <div className="empty-state">
+                <div className="empty-icon">📦</div>
+                <div className="page-title" style={{ fontSize: 18 }}>オブジェクトがまだありません</div>
+                <div className="empty-text">左のパネルでタスクを入力して「AIで解析する」を押すか、<br/>オブジェクトを手動で追加してください。</div>
+              </div>
+            ) : (
+              <div className="objects-grid">
+                {objects.map((obj, idx) => (
+                  <ObjectCard
+                    key={obj.id}
+                    obj={obj}
+                    idx={idx}
+                    selected={selectedId === obj.id}
+                    onSelect={() => { setSelectedId(obj.id === selectedId ? null : obj.id); setCurrentHint('actions'); }}
+                    onUpdate={updated => updateObject(obj.id, updated)}
+                    onDelete={() => deleteObject(obj.id)}
+                    allObjects={objects}
+                  />
+                ))}
+              </div>
+            )}
+          </>
+        )}
+
+        {mainTab === 'relations' && (
+          <>
+            <div className="page-title">リレーション定義</div>
+            <div className="page-sub">オブジェクト間の多重度（1:1 / 1:N / N:N）を定義します。</div>
+            <RelationsPanel objects={objects} onUpdate={(id, updated) => updateObject(id, updated)} />
+          </>
+        )}
+
+        {mainTab === 'validation' && (
+          <>
+            <div className="page-title">設計バリデーション</div>
+            <div className="page-sub">OOUIの設計ルールに基づいて、設計の問題点をチェックします。</div>
+            <ValidationPanel objects={objects} tasks={tasks} />
+          </>
+        )}
+      </main>
+
+      {showExport && <ExportModal objects={objects} tasks={tasks} onClose={() => setShowExport(false)} />}
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
 </body>
 </html>
